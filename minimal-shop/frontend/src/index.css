@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #1A1A1E;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: #2B3A8F;
+    color: #FFFFFF;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #2B3A8F;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Eyebrow label: dot + letter-spaced caps, as seen above the hero headline */
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #1A1A1E;
+  }
+
+  .eyebrow-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full bg-navy mr-2;
+  }
+
+  /* Price shown as a clean monospace figure */
+  .price-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .hairline {
+    border-color: #E4E4E8;
+  }
+
+  /* Pill buttons — primary filled, secondary outline — matches hero CTAs */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-white
+      font-body font-semibold text-sm px-7 py-3.5 transition-colors duration-200
+      hover:bg-navy disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink/70 text-ink
+      font-body font-semibold text-sm px-7 py-3.5 transition-colors duration-200
+      hover:border-navy hover:text-navy disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full text-ink
+      font-body font-medium text-sm px-5 py-2.5 transition-colors duration-200
+      hover:bg-sand;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-rule bg-white px-4 py-3 text-sm font-body
+      text-ink placeholder:text-clay/70 focus:border-navy transition-colors
+      outline-none;
+  }
+
+  .card {
+    @apply rounded-xl border border-rule bg-white transition-shadow duration-200
+      hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)];
+  }
+
+  /* Soft decorative background blobs — signature element from the hero */
+  .blob {
+    @apply absolute rounded-full bg-blob -z-10;
+  }
+}

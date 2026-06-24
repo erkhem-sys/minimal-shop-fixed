@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: minimal-shop-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: minimal-shop-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://your-frontend.vercel.app
+      - key: PUBLIC_BASE_URL
+        value: https://minimal-shop-backend.onrender.com
+
+databases:
+  - name: minimal-shop-db
+    plan: free
