@@ -1,5 +1,6 @@
 import pool from '../config/db.js'
 import { isNonEmptyString, sanitizeString } from '../utils/validation.js'
+import { sendNewOrderEmail } from '../utils/orderNotification.js'
 
 const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
@@ -84,6 +85,10 @@ export async function createOrder(req, res) {
     }
 
     await client.query('COMMIT')
+
+    // Хариу буцаахад саад болохгүйн тулд "await"-гүйгээр дуудна.
+    sendNewOrderEmail(order, validatedItems)
+
     res.status(201).json({ order })
   } catch (err) {
     await client.query('ROLLBACK')
