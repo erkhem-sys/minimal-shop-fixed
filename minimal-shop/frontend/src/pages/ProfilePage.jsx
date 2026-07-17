@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { LogOut, Package, Loader2, Save, Check } from 'lucide-react'
+import { LogOut, Package, Loader2, Save, Check, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice, formatDate } from '../utils/format'
 import api from '../utils/api'
@@ -14,7 +14,7 @@ const STATUS_LABELS = {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -46,9 +46,16 @@ export default function ProfilePage() {
           <h1 className="font-display font-bold text-2xl">{user.name}</h1>
           <p className="text-sm text-clay mt-1">{user.email} · {user.phone}</p>
         </div>
-        <button onClick={logout} className="btn-ghost border border-rule">
-          <LogOut size={15} /> Гарах
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link to="/admin" className="btn-secondary">
+              <ShieldCheck size={15} /> Admin панел
+            </Link>
+          )}
+          <button onClick={logout} className="btn-ghost border border-rule">
+            <LogOut size={15} /> Гарах
+          </button>
+        </div>
       </div>
 
       <CredentialsForm />
