@@ -1,23 +1,9 @@
 import multer from 'multer'
-import path from 'path'
-import crypto from 'crypto'
-import { isCloudinaryConfigured } from '../config/cloudinary.js'
 
-const diskStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.resolve('uploads'))
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase()
-    const uniqueName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`
-    cb(null, uniqueName)
-  },
-})
-
-// Cloudinary тохируулагдсан бол файлыг санах ойд хадгалаад, controller-т
-// шууд Cloudinary руу дамжуулна (disk-д бичихгүй тул Render-ийн ephemeral
-// disk-ийн асуудлаас зайлсхийнэ).
-const memoryStorage = multer.memoryStorage()
+// Зургийг санах ойд хадгалаад (disk-д бичихгүй), controller нь base64 болгож
+// шууд Postgres-ийн image/images баганад хадгална — Render-ийн үнэгүй багц дээр
+// deploy бүрд disk устдаг тул файл системд итгэхгүй, өгөгдлийн сан руу шууд хадгална.
+const storage = multer.memoryStorage()
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
@@ -30,9 +16,11 @@ function fileFilter(req, file, cb) {
 }
 
 const upload = multer({
-  storage: isCloudinaryConfigured ? memoryStorage : diskStorage,
+  storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  // base64 хэлбэрээр DB-д хадгалах тул жижигхэн хэмжээгээр хязгаарлана
+  // (DB мөр хэт том болохоос сэргийлнэ).
+  limits: { fileSize: 1.5 * 1024 * 1024 }, // 1.5MB
 })
 
 export default upload

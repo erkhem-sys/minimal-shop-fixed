@@ -1,32 +1,14 @@
 // Зураг хуулах controller.
-// Cloudinary тохируулагдсан бол файлыг тэнд байнга хадгалж, тогтмол URL
-// буцаана (Render-ийн үнэгүй багц deploy бүрд local disk-ээ цэвэрлэдэг тул).
-// Тохируулаагүй бол хуучны байдлаар local disk дээр хадгална (/uploads) —
-// энэ нь локал хөгжүүлэлтэд л ашиглагдана.
+// Render-ийн үнэгүй багц дээр /uploads хавтас deploy бүрд устдаг тул файлыг
+// disk-д огт бичихгүй — оронд нь base64 data URI болгож шууд буцаана, ингэснээр
+// дуудагч тал (бараа хадгалах controller) үүнийг шууд Postgres-д хадгална.
 
-import cloudinary, { isCloudinaryConfigured } from '../config/cloudinary.js'
-
-export async function uploadImage(req, res) {
+export function uploadImage(req, res) {
   if (!req.file) {
     return res.status(400).json({ message: 'Зураг сонгогдоогүй байна.' })
   }
 
-  if (isCloudinaryConfigured) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'minimal-shop', resource_type: 'image' },
-        (err, uploaded) => (err ? reject(err) : resolve(uploaded))
-      )
-      stream.end(req.file.buffer)
-    })
+  const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
 
-    return res.status(201).json({ url: result.secure_url, filename: result.public_id })
-  }
-
-  const publicUrl = `${process.env.PUBLIC_BASE_URL || ''}/uploads/${req.file.filename}`
-
-  res.status(201).json({
-    url: publicUrl,
-    filename: req.file.filename,
-  })
+  res.status(201).json({ url: dataUrl })
 }

@@ -3,13 +3,23 @@ import { isNonEmptyString, isPositiveNumber, sanitizeString } from '../utils/val
 import { isValidCategory, VALID_CATEGORIES } from '../utils/categories.js'
 
 const MAX_PRODUCT_IMAGES = 6
+// Зураг нь base64 data URI (жишээ нь data:image/jpeg;base64,...) хэлбэрээр
+// хадгалагддаг тул sanitizeString-ийн 500 тэмдэгтийн хязгаар энд тохирохгүй —
+// тайрвал зургийг эвдэнэ. Оронд нь зөвхөн санамсаргүй хэт том утгаас
+// хамгаалах зорилготой өндөр дээвэр (~2MB зурагт хүрэлцэхүйц) ашиглана.
+const MAX_IMAGE_VALUE_LENGTH = 3_000_000
+
+function sanitizeImageValue(value) {
+  if (typeof value !== 'string') return ''
+  return value.trim().slice(0, MAX_IMAGE_VALUE_LENGTH)
+}
 
 // Барааны зургийн жагсаалтыг шалгаж цэвэрлэнэ. Массив биш бол null буцааж алдаа
 // мэдэгдэнэ; хоосон утгуудыг хасаж, дээд тал нь MAX_PRODUCT_IMAGES ширхэгээр хязгаарлана.
 function sanitizeImageList(value) {
   if (value === undefined) return []
   if (!Array.isArray(value)) return null
-  const cleaned = value.map((v) => sanitizeString(v, 500)).filter(Boolean)
+  const cleaned = value.map(sanitizeImageValue).filter(Boolean)
   return cleaned.slice(0, MAX_PRODUCT_IMAGES)
 }
 
@@ -80,7 +90,7 @@ export async function createProduct(req, res) {
     `INSERT INTO products (name, description, price, image, images, video, category, stock)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [name, description, price, sanitizeString(image, 500), images, video, sanitizeString(category, 60), stock]
+    [name, description, price, sanitizeImageValue(image), images, video, sanitizeString(category, 60), stock]
   )
 
   res.status(201).json({ product: result.rows[0] })
@@ -101,7 +111,7 @@ export async function updateProduct(req, res) {
   const price = req.body.price !== undefined ? req.body.price : current.price
   const stock = req.body.stock !== undefined ? req.body.stock : current.stock
   const category = req.body.category !== undefined ? sanitizeString(req.body.category, 60) : current.category
-  const image = req.body.image !== undefined ? sanitizeString(req.body.image, 500) : current.image
+  const image = req.body.image !== undefined ? sanitizeImageValue(req.body.image) : current.image
 
   if (!isPositiveNumber(price) || !isPositiveNumber(stock)) {
     return res.status(400).json({ message: 'Үнэ, үлдэгдэл зөв тоо байх ёстой.' })

@@ -31,7 +31,9 @@ app.use(
   })
 )
 
-app.use(express.json({ limit: '2mb' }))
+// Барааны зураг base64 хэлбэрээр JSON payload дотор ирдэг болсон тул
+// (6 зураг хүртэл, тус бүр ~1.5MB) хязгаарыг тохирсон хэмжээгээр нэмэгдүүлнэ.
+app.use(express.json({ limit: '20mb' }))
 
 // Бүх /api эндпойнтод хязгаарлалт тогтооно (DoS, brute-force-оос хамгаална)
 const apiLimiter = rateLimit({

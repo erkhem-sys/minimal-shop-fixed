@@ -11,6 +11,14 @@ const DEFAULTS = {
 
 const SETTINGS_KEYS = Object.keys(DEFAULTS)
 
+// heroImage нь base64 data URI байж болох тул бусад текст талбаруудаас
+// тэс өөр, хамаагүй том хязгаартай байх ёстой (тайрвал зургийг эвдэнэ).
+function maxLengthFor(key) {
+  if (key === 'heroImage') return 3_000_000
+  if (key === 'heroSubtitle') return 500
+  return 200
+}
+
 export async function getSettings(req, res) {
   const result = await pool.query('SELECT key, value FROM settings')
 
@@ -27,7 +35,7 @@ export async function getSettings(req, res) {
 export async function updateSettings(req, res) {
   const updates = SETTINGS_KEYS.filter((key) => req.body[key] !== undefined).map((key) => [
     key,
-    sanitizeString(req.body[key], key === 'heroSubtitle' ? 500 : 200),
+    sanitizeString(req.body[key], maxLengthFor(key)),
   ])
 
   for (const [key, value] of updates) {
