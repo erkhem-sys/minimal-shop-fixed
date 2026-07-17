@@ -19,6 +19,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminProductsPage from './pages/admin/AdminProductsPage'
 import AdminProductFormPage from './pages/admin/AdminProductFormPage'
 import AdminOrdersPage from './pages/admin/AdminOrdersPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="products/new" element={<AdminProductFormPage />} />
           <Route path="products/:id/edit" element={<AdminProductFormPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
       </Route>
     </Routes>

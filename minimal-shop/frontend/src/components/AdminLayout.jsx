@@ -1,11 +1,12 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
-import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
   { to: '/admin', label: 'Хянах самбар', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Бараа', icon: Package },
   { to: '/admin/orders', label: 'Захиалга', icon: ClipboardList },
+  { to: '/admin/settings', label: 'Нүүр хуудас', icon: Settings },
 ]
 
 export default function AdminLayout() {

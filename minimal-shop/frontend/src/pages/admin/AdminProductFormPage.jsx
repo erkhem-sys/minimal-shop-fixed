@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Loader2, Save, Upload } from 'lucide-react'
+import { Loader2, Save, Upload, X, ChevronLeft, ChevronRight, Star, Film } from 'lucide-react'
 import api from '../../utils/api'
 import { CATEGORIES } from '../../data/products'
 import { resolveImageUrl } from '../../utils/image'
+import { getEmbeddableVideoUrl } from '../../utils/video'
+
+const MAX_IMAGES = 6
 
 const EMPTY_FORM = {
   name: '',
@@ -11,7 +14,6 @@ const EMPTY_FORM = {
   price: '',
   stock: '',
   category: CATEGORIES[0]?.id || '',
-  image: '',
   images: [],
   video: '',
 }
@@ -33,7 +35,12 @@ export default function AdminProductFormPage() {
     async function fetchProduct() {
       try {
         const { data } = await api.get(`/products/${id}`)
-        if (active) setForm({ ...EMPTY_FORM, ...data.product })
+        if (!active) return
+        const product = data.product
+        // Хуучин бараанд зөвхөн ганц "image" талбар байж болзошгүй тул
+        // images массивт нэгтгэж харуулна.
+        const images = product.images?.length ? product.images : [product.image].filter(Boolean)
+        setForm({ ...EMPTY_FORM, ...product, images })
       } catch {
         if (active) setError('Бараа уншихад алдаа гарлаа.')
       } finally {
@@ -52,20 +59,36 @@ export default function AdminProductFormPage() {
 
   async function handleImageUpload(e) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     setUploading(true)
+    setError(null)
     try {
       const formData = new FormData()
       formData.append('image', file)
       const { data } = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      update('image', data.url)
+      setForm((f) => ({ ...f, images: [...f.images, data.url].slice(0, MAX_IMAGES) }))
     } catch {
       setError('Зураг хуулахад алдаа гарлаа.')
     } finally {
       setUploading(false)
     }
+  }
+
+  function removeImage(index) {
+    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }))
+  }
+
+  function moveImage(index, direction) {
+    setForm((f) => {
+      const next = [...f.images]
+      const target = index + direction
+      if (target < 0 || target >= next.length) return f
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return { ...f, images: next }
+    })
   }
 
   async function handleSubmit(e) {
@@ -77,6 +100,8 @@ export default function AdminProductFormPage() {
         ...form,
         price: Number(form.price),
         stock: Number(form.stock),
+        image: form.images[0] || '',
+        video: form.video.trim(),
       }
       if (isEdit) {
         await api.put(`/products/${id}`, payload)
@@ -98,6 +123,8 @@ export default function AdminProductFormPage() {
       </div>
     )
   }
+
+  const videoEmbed = getEmbeddableVideoUrl(form.video)
 
   return (
     <div className="max-w-2xl">
@@ -166,16 +193,104 @@ export default function AdminProductFormPage() {
           </select>
         </div>
 
+        {/* Multi-image manager — эхний зураг картанд харагдах "үндсэн" зураг болно */}
         <div>
           <label className="text-sm font-medium block mb-1.5">Зураг</label>
-          {form.image && (
-            <img src={resolveImageUrl(form.image)} alt="" className="w-24 h-24 rounded-lg object-cover bg-sand mb-3" />
+          <p className="text-xs text-clay mb-3">
+            Эхний зураг бараа карт болон жагсаалтад харагдах үндсэн зураг болно. Дараалал өөрчлөх бол сум ашиглана уу.
+          </p>
+
+          {form.images.length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-3">
+              {form.images.map((img, index) => (
+                <div
+                  key={img + index}
+                  className="relative aspect-square rounded-lg overflow-hidden bg-sand border border-rule group"
+                >
+                  <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover" />
+
+                  {index === 0 && (
+                    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-navy text-white text-[10px] font-semibold px-2 py-0.5">
+                      <Star size={9} className="fill-current" /> Үндсэн
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    aria-label="Зураг хасах"
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-ink hover:bg-rust hover:text-white transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+
+                  <div className="absolute bottom-1.5 right-1.5 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveImage(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Өмнө нь зөөх"
+                      className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-ink hover:bg-navy hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <ChevronLeft size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveImage(index, 1)}
+                      disabled={index === form.images.length - 1}
+                      aria-label="Дараа нь зөөх"
+                      className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-ink hover:bg-navy hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-          <label className="inline-flex items-center gap-2 text-sm font-medium border border-rule rounded-full px-4 py-2.5 cursor-pointer hover:border-navy">
-            {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-            {uploading ? 'Хуулж байна...' : 'Зураг хуулах'}
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+
+          {form.images.length < MAX_IMAGES && (
+            <label className="inline-flex items-center gap-2 text-sm font-medium border border-rule rounded-full px-4 py-2.5 cursor-pointer hover:border-navy">
+              {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+              {uploading ? 'Хуулж байна...' : 'Зураг нэмэх'}
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            </label>
+          )}
+          <p className="text-xs text-clay mt-2">{form.images.length} / {MAX_IMAGES} зураг</p>
+        </div>
+
+        {/* Video link — файл биш, зөвхөн холбоос (Render-ийн үнэгүй сервер дээр
+            хуулсан файл deploy бүрд устдаг тул холбоосоор явуулна). */}
+        <div>
+          <label className="text-sm font-medium block mb-1.5 flex items-center gap-1.5">
+            <Film size={14} /> Бичлэгийн холбоос
           </label>
+          <input
+            type="url"
+            value={form.video}
+            onChange={(e) => update('video', e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="input-field"
+          />
+          <p className="text-xs text-clay mt-1.5">YouTube, Facebook эсвэл Instagram бичлэгийн холбоосыг оруулна уу.</p>
+
+          {form.video && (
+            <div className="mt-3 aspect-video max-w-xs rounded-lg overflow-hidden bg-sand border border-rule">
+              {videoEmbed ? (
+                <iframe
+                  src={videoEmbed}
+                  title="Бичлэгийн урьдчилсан харагдац"
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-center px-3">
+                  <p className="text-xs text-clay">Холбоосыг таньсангүй, гэхдээ хадгалагдана.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {error && <p className="text-sm text-rust">{error}</p>}

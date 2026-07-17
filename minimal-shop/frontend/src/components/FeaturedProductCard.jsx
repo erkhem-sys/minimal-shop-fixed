@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Check, Phone, ShoppingBag } from 'lucide-react'
+import { Check, Phone, ShoppingBag, Images, Film } from 'lucide-react'
 import { formatPrice } from '../utils/format'
 import { resolveImageUrl } from '../utils/image'
 import { CATEGORIES } from '../data/products'
@@ -11,6 +11,7 @@ export default function FeaturedProductCard({ product }) {
   const [added, setAdded] = useState(false)
   const outOfStock = product.stock <= 0
   const categoryName = CATEGORIES.find((c) => c.id === product.category)?.name
+  const extraImageCount = (product.images?.length || 0) - 1
 
   function handleAddToCart() {
     if (outOfStock) return
@@ -20,13 +21,27 @@ export default function FeaturedProductCard({ product }) {
   }
 
   return (
-    <div className="card relative flex flex-col overflow-hidden">
-      <Link to={`/products/${product.id}`} className="block aspect-[4/3] bg-sand overflow-hidden">
+    <div className="card group relative flex flex-col overflow-hidden">
+      <Link to={`/products/${product.id}`} className="relative block aspect-[4/3] bg-sand overflow-hidden">
         <img
           src={resolveImageUrl(product.image)}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+        {(extraImageCount > 0 || product.video) && (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            {extraImageCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/90 text-ink text-[10px] font-semibold px-2 py-1">
+                <Images size={11} /> {extraImageCount + 1}
+              </span>
+            )}
+            {product.video && (
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 text-ink">
+                <Film size={11} />
+              </span>
+            )}
+          </div>
+        )}
       </Link>
 
       <div className="p-5 flex flex-col flex-1">

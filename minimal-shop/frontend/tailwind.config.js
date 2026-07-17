@@ -12,6 +12,8 @@ export default {
         navy: '#2B3A8F',
         'navy-dark': '#202C70',
         sand: '#FAFAFA',
+        rust: '#B5533C',
+        'rust-light': '#F7EAE6',
       },
       fontFamily: {
         display: ['Inter', 'system-ui', 'sans-serif'],

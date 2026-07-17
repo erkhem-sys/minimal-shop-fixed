@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Images, Film } from 'lucide-react'
 import { formatPrice } from '../utils/format'
 import { resolveImageUrl } from '../utils/image'
 import { useCart } from '../context/CartContext'
@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext'
 export default function ProductCard({ product }) {
   const { addItem } = useCart()
   const outOfStock = product.stock <= 0
+  const extraImageCount = (product.images?.length || 0) - 1
 
   function handleQuickAdd(e) {
     e.preventDefault()
@@ -28,6 +29,22 @@ export default function ProductCard({ product }) {
             <span className="text-xs font-semibold text-clay uppercase tracking-wide">Дууссан</span>
           </div>
         )}
+
+        {(extraImageCount > 0 || product.video) && (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5">
+            {extraImageCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/90 text-ink text-[10px] font-semibold px-2 py-1">
+                <Images size={11} /> {extraImageCount + 1}
+              </span>
+            )}
+            {product.video && (
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 text-ink">
+                <Film size={11} />
+              </span>
+            )}
+          </div>
+        )}
+
         <button
           onClick={handleQuickAdd}
           disabled={outOfStock}

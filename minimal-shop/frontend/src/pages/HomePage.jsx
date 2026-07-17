@@ -3,26 +3,43 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Phone, Truck, ShieldCheck, RefreshCw, Mail, Loader2, AlertCircle } from 'lucide-react'
 import api from '../utils/api'
 import FeaturedProductCard from '../components/FeaturedProductCard'
-import heroImage from '../assets/products/mic-poster.png'
+import { resolveImageUrl } from '../utils/image'
+import heroFallback from '../assets/products/mic-poster.png'
 
 const FEATURED_COUNT = 3
 
+const DEFAULT_SETTINGS = {
+  heroImage: '',
+  heroEyebrow: 'ЦАХИМ ДЭЛГҮҮР · УЛААНБААТАР',
+  heroTitle: 'Зөв хэрэгсэл. Хялбар амьдрал.',
+  heroSubtitle: 'Өдөр тутмын хэрэгцээт ухаалаг бүтээгдэхүүнүүд. Илүүц зүйлгүй — зөвхөн ашиглах л бараа.',
+}
+
 export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState([])
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   // Хамгийн сүүлд нэмэгдсэн бараануудыг онцлох болгоно — admin-аас шинэ
-  // бараа нэмэх бүрд энэ хэсэг автоматаар шинэчлэгдэнэ.
+  // бараа нэмэх бүрд энэ хэсэг автоматаар шинэчлэгдэнэ. Hero зураг/текстийг ч
+  // мөн admin-ийн "Нүүр хуудас" тохиргооноос уншина.
   useEffect(() => {
     let active = true
 
-    async function fetchFeatured() {
+    async function fetchHome() {
       setLoading(true)
       setError(null)
       try {
-        const { data } = await api.get('/products')
-        if (active) setFeaturedProducts((data.products || []).slice(0, FEATURED_COUNT))
+        const [productsRes, settingsRes] = await Promise.all([
+          api.get('/products'),
+          api.get('/settings').catch(() => null),
+        ])
+        if (!active) return
+        setFeaturedProducts((productsRes.data.products || []).slice(0, FEATURED_COUNT))
+        if (settingsRes?.data?.settings) {
+          setSettings({ ...DEFAULT_SETTINGS, ...settingsRes.data.settings })
+        }
       } catch {
         if (active) setError('Барааны жагсаалт ачааллахад алдаа гарлаа.')
       } finally {
@@ -30,52 +47,58 @@ export default function HomePage() {
       }
     }
 
-    fetchFeatured()
+    fetchHome()
     return () => {
       active = false
     }
   }, [])
 
+  const heroImageSrc = settings.heroImage ? resolveImageUrl(settings.heroImage) : heroFallback
+  const titleWords = settings.heroTitle.trim().split(/\s+/)
+  const titleLead = titleWords.slice(0, -1).join(' ')
+  const titleAccent = titleWords[titleWords.length - 1]
+
   return (
     <div>
-      {/* Hero — eyebrow, two-line headline with accent word, supporting copy,
-          pill CTAs on the left; real product photography on the right */}
+      {/* Hero — eyebrow, headline with accent last word, supporting copy,
+          pill CTAs on the left; real product photography on the right.
+          Image + copy are admin-editable via /admin/settings. */}
       <section className="relative overflow-hidden border-b hairline border-solid">
         <div className="blob w-[420px] h-[420px] -top-40 -right-32 opacity-60" />
+        <div className="blob w-[280px] h-[280px] -bottom-32 -left-24 opacity-40" />
 
-        <div className="max-w-6xl mx-auto px-5 md:px-8 py-14 md:py-20 relative grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 items-center">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-14 md:py-24 relative grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
             <p className="eyebrow mb-6">
               <span className="eyebrow-dot" />
-              ЦАХИМ ДЭЛГҮҮР · УЛААНБААТАР
+              {settings.heroEyebrow}
             </p>
 
-            <h1 className="font-display font-bold text-4xl sm:text-5xl leading-[1.1] uppercase">
-              Зөв хэрэгсэл.
-              <br />
-              Хялбар <span className="text-navy">амьдрал.</span>
+            <h1 className="font-display font-bold text-4xl sm:text-5xl lg:text-[3.25rem] leading-[1.08] uppercase tracking-tight">
+              {titleLead && <>{titleLead} </>}
+              <span className="text-navy">{titleAccent}</span>
             </h1>
 
             <p className="mt-6 text-base md:text-lg text-clay max-w-md leading-relaxed">
-              Өдөр тутмын хэрэгцээт ухаалаг бүтээгдэхүүнүүд. Илүүц зүйлгүй — зөвхөн ашиглах л бараа.
+              {settings.heroSubtitle}
             </p>
 
-            <div className="mt-7 flex flex-wrap items-center gap-4 text-sm text-clay">
+            <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-clay">
               <div className="flex items-center gap-2">
-                <Truck size={16} className="text-navy" />
+                <Truck size={16} className="text-navy shrink-0" />
                 Улаанбаатар хотод 1–2 хоногт хүргэнэ
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-navy" />
+                <ShieldCheck size={16} className="text-navy shrink-0" />
                 Баталгаатай, шалгасан бараа
               </div>
               <div className="flex items-center gap-2">
-                <RefreshCw size={16} className="text-navy" />
+                <RefreshCw size={16} className="text-navy shrink-0" />
                 7 хоногийн дотор буцаалт
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <a href="#featured" className="btn-primary">
                 Бараа үзэх
                 <ArrowRight size={15} />
@@ -87,12 +110,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-xl overflow-hidden bg-sand">
-            <img
-              src={heroImage}
-              alt="Минимал Хэрэглээ Шопын бараа"
-              className="w-full h-full object-cover"
-            />
+          <div className="relative">
+            <div className="aspect-[4/5] md:aspect-square rounded-2xl overflow-hidden bg-sand shadow-[0_20px_60px_rgba(26,26,30,0.10)]">
+              <img
+                src={heroImageSrc}
+                alt="Минимал Хэрэглээ Шопын бараа"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="hidden sm:flex absolute -bottom-5 -left-5 items-center gap-3 bg-white border border-rule rounded-xl px-4 py-3 shadow-[0_10px_30px_rgba(26,26,30,0.08)]">
+              <span className="w-2 h-2 rounded-full bg-navy animate-pulse" />
+              <span className="text-xs font-medium text-ink">Шууд бэлэн бараанаас</span>
+            </div>
           </div>
         </div>
       </section>

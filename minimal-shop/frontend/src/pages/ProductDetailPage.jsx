@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Minus, Plus, ShoppingBag, ChevronRight, Check, Loader2, AlertCircle } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, ChevronRight, Check, Loader2, AlertCircle, Play } from 'lucide-react'
 import api from '../utils/api'
 import { CATEGORIES } from '../data/products'
 import { formatPrice } from '../utils/format'
 import { resolveImageUrl } from '../utils/image'
+import { getEmbeddableVideoUrl } from '../utils/video'
 import { SHIPPING_FEE } from '../utils/constants'
 import { useCart } from '../context/CartContext'
 import FeaturedProductCard from '../components/FeaturedProductCard'
@@ -24,6 +25,7 @@ export default function ProductDetailPage() {
 
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const [activeImage, setActiveImage] = useState(0)
 
   // Бараа болон төстэй бараануудыг API-аас татна.
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function ProductDetailPage() {
       setError(null)
       setNotFound(false)
       setQuantity(1)
+      setActiveImage(0)
 
       try {
         const { data } = await api.get(`/products/${id}`)
@@ -108,7 +111,12 @@ export default function ProductDetailPage() {
 
   const categoryName = CATEGORIES.find((c) => c.id === product.category)?.name
   const outOfStock = product.stock <= 0
-  const imageUrl = resolveImageUrl(product.image)
+
+  const gallery = [product.image, ...(product.images || [])].filter(
+    (img, index, arr) => img && arr.indexOf(img) === index
+  )
+  const activeImageUrl = resolveImageUrl(gallery[activeImage] || gallery[0])
+  const videoEmbed = getEmbeddableVideoUrl(product.video)
 
   function handleAddToCart() {
     addItem(product, quantity)
@@ -133,11 +141,56 @@ export default function ProductDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
-        {/* Gallery */}
+        {/* Gallery — main image with a thumbnail strip; clicking a thumbnail
+            swaps the main image without a reload (per gallery UX best practice) */}
         <div>
           <div className="aspect-square rounded-xl overflow-hidden bg-sand">
-            <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
+            <img src={activeImageUrl} alt={product.name} className="w-full h-full object-cover" />
           </div>
+
+          {gallery.length > 1 && (
+            <div className="mt-3 grid grid-cols-5 gap-2.5">
+              {gallery.map((img, index) => (
+                <button
+                  key={img + index}
+                  type="button"
+                  onClick={() => setActiveImage(index)}
+                  aria-label={`Зураг ${index + 1}`}
+                  aria-current={activeImage === index}
+                  className={`aspect-square rounded-lg overflow-hidden bg-sand border-2 transition-colors ${
+                    activeImage === index ? 'border-navy' : 'border-transparent hover:border-rule'
+                  }`}
+                >
+                  <img src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {product.video && (
+            <div className="mt-5">
+              {videoEmbed ? (
+                <div className="aspect-video rounded-xl overflow-hidden bg-sand">
+                  <iframe
+                    src={videoEmbed}
+                    title={`${product.name} — бичлэг`}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <a
+                  href={product.video}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-navy hover:underline"
+                >
+                  <Play size={15} /> Бичлэг үзэх
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Info */}

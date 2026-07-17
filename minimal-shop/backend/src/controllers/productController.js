@@ -2,6 +2,17 @@ import pool from '../config/db.js'
 import { isNonEmptyString, isPositiveNumber, sanitizeString } from '../utils/validation.js'
 import { isValidCategory, VALID_CATEGORIES } from '../utils/categories.js'
 
+const MAX_PRODUCT_IMAGES = 6
+
+// Барааны зургийн жагсаалтыг шалгаж цэвэрлэнэ. Массив биш бол null буцааж алдаа
+// мэдэгдэнэ; хоосон утгуудыг хасаж, дээд тал нь MAX_PRODUCT_IMAGES ширхэгээр хязгаарлана.
+function sanitizeImageList(value) {
+  if (value === undefined) return []
+  if (!Array.isArray(value)) return null
+  const cleaned = value.map((v) => sanitizeString(v, 500)).filter(Boolean)
+  return cleaned.slice(0, MAX_PRODUCT_IMAGES)
+}
+
 export async function getProducts(req, res) {
   const { category, search, sort } = req.query
 
@@ -59,11 +70,17 @@ export async function createProduct(req, res) {
     return res.status(400).json({ message: `Ангилал зөв байх ёстой (${VALID_CATEGORIES.join(', ')}).` })
   }
 
+  const images = sanitizeImageList(req.body.images)
+  if (images === null) {
+    return res.status(400).json({ message: 'Зургийн жагсаалт буруу байна.' })
+  }
+  const video = sanitizeString(req.body.video, 500)
+
   const result = await pool.query(
-    `INSERT INTO products (name, description, price, image, category, stock)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO products (name, description, price, image, images, video, category, stock)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [name, description, price, sanitizeString(image, 500), sanitizeString(category, 60), stock]
+    [name, description, price, sanitizeString(image, 500), images, video, sanitizeString(category, 60), stock]
   )
 
   res.status(201).json({ product: result.rows[0] })
@@ -93,10 +110,20 @@ export async function updateProduct(req, res) {
     return res.status(400).json({ message: `Ангилал зөв байх ёстой (${VALID_CATEGORIES.join(', ')}).` })
   }
 
+  let images = current.images
+  if (req.body.images !== undefined) {
+    images = sanitizeImageList(req.body.images)
+    if (images === null) {
+      return res.status(400).json({ message: 'Зургийн жагсаалт буруу байна.' })
+    }
+  }
+  const video = req.body.video !== undefined ? sanitizeString(req.body.video, 500) : current.video
+
   const result = await pool.query(
-    `UPDATE products SET name = $1, description = $2, price = $3, image = $4, category = $5, stock = $6
-     WHERE id = $7 RETURNING *`,
-    [name, description, price, image, category, stock, id]
+    `UPDATE products SET name = $1, description = $2, price = $3, image = $4, images = $5, video = $6,
+       category = $7, stock = $8
+     WHERE id = $9 RETURNING *`,
+    [name, description, price, image, images, video, category, stock, id]
   )
 
   res.json({ product: result.rows[0] })

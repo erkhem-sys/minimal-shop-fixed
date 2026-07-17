@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  key VARCHAR(60) PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT ''
+);
+
 CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -53,6 +58,12 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+
+-- "CREATE TABLE IF NOT EXISTS" дээрх products хүснэгт нь энэ багана нэмэгдэхээс
+-- өмнө үүссэн байж болзошгүй тул (жишээ нь энэ сан анх migrate хийгдсэн үед) шинэ
+-- баганыг тусад нь ALTER-аар нэмнэ — ингэснээр хуучин суулгацууд дээр ч ажиллана.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS video TEXT DEFAULT '';
 `
 
 async function migrate() {
