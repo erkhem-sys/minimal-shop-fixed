@@ -49,6 +49,52 @@ export async function register(req, res) {
   res.status(201).json({ token, user: toPublicUser(user) })
 }
 
+export async function updateMe(req, res) {
+  const userId = req.user.id
+  const existing = await pool.query('SELECT * FROM users WHERE id = $1', [userId])
+  if (existing.rows.length === 0) {
+    return res.status(404).json({ message: 'Хэрэглэгч олдсонгүй.' })
+  }
+  const current = existing.rows[0]
+
+  const name = req.body.name !== undefined ? sanitizeString(req.body.name, 120) : current.name
+  const phone = req.body.phone !== undefined ? sanitizeString(req.body.phone, 30) : current.phone
+  const email =
+    req.body.email !== undefined ? sanitizeString(req.body.email, 160).toLowerCase() : current.email
+
+  if (!isNonEmptyString(name) || !isNonEmptyString(phone)) {
+    return res.status(400).json({ message: 'Нэр, утасны дугаараа бөглөнө үү.' })
+  }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: 'Имэйл хаяг буруу байна.' })
+  }
+
+  if (email !== current.email) {
+    const duplicate = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId])
+    if (duplicate.rows.length > 0) {
+      return res.status(409).json({ message: 'Энэ имэйл хаягаар өөр бүртгэл байна.' })
+    }
+  }
+
+  let password = current.password
+  if (req.body.password) {
+    if (req.body.password.length < 6) {
+      return res.status(400).json({ message: 'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.' })
+    }
+    password = await bcrypt.hash(req.body.password, 10)
+  }
+
+  const result = await pool.query(
+    `UPDATE users SET name = $1, phone = $2, email = $3, password = $4
+     WHERE id = $5 RETURNING id, name, phone, email, role`,
+    [name, phone, email, password, userId]
+  )
+
+  const user = result.rows[0]
+  const token = signToken(user)
+  res.json({ token, user: toPublicUser(user) })
+}
+
 export async function login(req, res) {
   const email = sanitizeString(req.body.email, 160).toLowerCase()
   const { password } = req.body

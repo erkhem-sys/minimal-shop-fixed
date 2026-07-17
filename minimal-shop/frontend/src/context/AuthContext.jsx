@@ -59,12 +59,29 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function updateAccount(updates) {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data } = await api.put('/auth/me', updates)
+      window.localStorage.setItem(TOKEN_KEY, data.token)
+      setUser(data.user)
+      return { success: true }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Хадгалахад алдаа гарлаа. Дахин оролдоно уу.'
+      setError(msg)
+      return { success: false, message: msg }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   function logout() {
     window.localStorage.removeItem(TOKEN_KEY)
     setUser(null)
   }
 
-  const value = { user, login, register, logout, loading, error, isAdmin: user?.role === 'admin' }
+  const value = { user, login, register, updateAccount, logout, loading, error, isAdmin: user?.role === 'admin' }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

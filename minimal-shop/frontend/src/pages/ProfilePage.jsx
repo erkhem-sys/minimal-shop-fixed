@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Link } from 'react-router-dom'
-import { LogOut, Package, Loader2 } from 'lucide-react'
+import { LogOut, Package, Loader2, Save, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice, formatDate } from '../utils/format'
 import api from '../utils/api'
@@ -51,6 +51,8 @@ export default function ProfilePage() {
         </button>
       </div>
 
+      <CredentialsForm />
+
       <p className="eyebrow mb-4"><span className="eyebrow-dot" />Захиалгын түүх</p>
 
       {loading && (
@@ -81,6 +83,66 @@ export default function ProfilePage() {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function CredentialsForm() {
+  const { user, updateAccount } = useAuth()
+  const [email, setEmail] = useState(user.email)
+  const [password, setPassword] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [saved, setSaved] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    setSaved(false)
+    const updates = { email }
+    if (password) updates.password = password
+    const result = await updateAccount(updates)
+    setSaving(false)
+    if (result.success) {
+      setPassword('')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } else {
+      setError(result.message)
+    }
+  }
+
+  return (
+    <div className="mb-12 bg-white border border-rule rounded-xl p-6 max-w-md">
+      <p className="eyebrow mb-4"><span className="eyebrow-dot" />Нэвтрэх мэдээлэл</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Имэйл хаяг</label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input-field"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1.5">Шинэ нууц үг</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Хоосон орхивол өөрчлөгдөхгүй"
+            className="input-field"
+          />
+        </div>
+        {error && <p className="text-sm text-rust">{error}</p>}
+        <button type="submit" disabled={saving} className="btn-secondary">
+          {saving ? <Loader2 size={15} className="animate-spin" /> : saved ? <Check size={15} /> : <Save size={15} />}
+          {saving ? 'Хадгалж байна...' : saved ? 'Хадгалагдлаа' : 'Хадгалах'}
+        </button>
+      </form>
     </div>
   )
 }
