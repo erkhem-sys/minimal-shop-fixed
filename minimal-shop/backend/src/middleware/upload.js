@@ -1,8 +1,9 @@
 import multer from 'multer'
 import path from 'path'
 import crypto from 'crypto'
+import { isCloudinaryConfigured } from '../config/cloudinary.js'
 
-const storage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.resolve('uploads'))
   },
@@ -12,6 +13,11 @@ const storage = multer.diskStorage({
     cb(null, uniqueName)
   },
 })
+
+// Cloudinary тохируулагдсан бол файлыг санах ойд хадгалаад, controller-т
+// шууд Cloudinary руу дамжуулна (disk-д бичихгүй тул Render-ийн ephemeral
+// disk-ийн асуудлаас зайлсхийнэ).
+const memoryStorage = multer.memoryStorage()
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
@@ -24,7 +30,7 @@ function fileFilter(req, file, cb) {
 }
 
 const upload = multer({
-  storage,
+  storage: isCloudinaryConfigured ? memoryStorage : diskStorage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 })
