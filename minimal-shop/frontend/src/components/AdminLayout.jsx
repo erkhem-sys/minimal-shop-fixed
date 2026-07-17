@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
-import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft, Settings } from 'lucide-react'
+import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft, Settings, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const NAV_ITEMS = [
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
     <div className="min-h-screen flex bg-sand">
@@ -61,8 +63,51 @@ export default function AdminLayout() {
       <div className="flex-1 min-w-0">
         <header className="md:hidden h-16 bg-white border-b hairline border-solid flex items-center justify-between px-5">
           <span className="font-display font-bold text-sm">Админ самбар</span>
-          <button onClick={logout} className="text-sm text-clay">Гарах</button>
+          <button
+            onClick={() => setMobileNavOpen((v) => !v)}
+            className="w-9 h-9 inline-flex items-center justify-center rounded-full hover:bg-sand"
+            aria-label="Цэс"
+          >
+            {mobileNavOpen ? <X size={19} /> : <Menu size={19} />}
+          </button>
         </header>
+
+        {mobileNavOpen && (
+          <nav className="md:hidden bg-white border-b hairline border-solid px-3 py-3 space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setMobileNavOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-navy text-white' : 'text-ink hover:bg-sand'
+                    }`
+                  }
+                >
+                  <Icon size={17} />
+                  {item.label}
+                </NavLink>
+              )
+            })}
+            <Link
+              to="/"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-clay hover:bg-sand"
+            >
+              <ArrowLeft size={17} /> Дэлгүүр лүү буцах
+            </Link>
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-clay hover:bg-sand"
+            >
+              <LogOut size={17} /> Гарах
+            </button>
+          </nav>
+        )}
+
         <main className="p-5 md:p-8">
           <Outlet />
         </main>
