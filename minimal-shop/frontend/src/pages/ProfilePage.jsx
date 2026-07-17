@@ -98,9 +98,12 @@ function CredentialsForm() {
   const { user, updateAccount } = useAuth()
   const [email, setEmail] = useState(user.email)
   const [password, setPassword] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
+
+  const changingCredentials = email !== user.email || Boolean(password)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -109,10 +112,12 @@ function CredentialsForm() {
     setSaved(false)
     const updates = { email }
     if (password) updates.password = password
+    if (changingCredentials) updates.currentPassword = currentPassword
     const result = await updateAccount(updates)
     setSaving(false)
     if (result.success) {
       setPassword('')
+      setCurrentPassword('')
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } else {
@@ -144,6 +149,19 @@ function CredentialsForm() {
             className="input-field"
           />
         </div>
+        {changingCredentials && (
+          <div>
+            <label className="text-sm font-medium block mb-1.5">Одоогийн нууц үг</label>
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Баталгаажуулахын тулд одоогийн нууц үгээ оруулна уу"
+              className="input-field"
+            />
+          </div>
+        )}
         {error && <p className="text-sm text-rust">{error}</p>}
         <button type="submit" disabled={saving} className="btn-secondary">
           {saving ? <Loader2 size={15} className="animate-spin" /> : saved ? <Check size={15} /> : <Save size={15} />}

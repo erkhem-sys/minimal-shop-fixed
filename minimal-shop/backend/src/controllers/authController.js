@@ -69,7 +69,23 @@ export async function updateMe(req, res) {
     return res.status(400).json({ message: 'Имэйл хаяг буруу байна.' })
   }
 
-  if (email !== current.email) {
+  const changingEmail = email !== current.email
+  const changingPassword = Boolean(req.body.password)
+
+  // Имэйл эсвэл нууц үг солиход одоогийн нууц үгээр баталгаажуулна — токен
+  // хулгайлагдсан ч (жишээ нь урьд нь хадгалагдсан localStorage) шууд
+  // эзний нэвтрэх мэдээллийг бүрмөсөн сольж чадахгүй байхын тулд.
+  if (changingEmail || changingPassword) {
+    if (!isNonEmptyString(req.body.currentPassword)) {
+      return res.status(400).json({ message: 'Одоогийн нууцүгээ оруулна уу.' })
+    }
+    const currentPasswordMatches = await bcrypt.compare(req.body.currentPassword, current.password)
+    if (!currentPasswordMatches) {
+      return res.status(401).json({ message: 'Одоогийн нууц үг буруу байна.' })
+    }
+  }
+
+  if (changingEmail) {
     const duplicate = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId])
     if (duplicate.rows.length > 0) {
       return res.status(409).json({ message: 'Энэ имэйл хаягаар өөр бүртгэл байна.' })
@@ -77,7 +93,7 @@ export async function updateMe(req, res) {
   }
 
   let password = current.password
-  if (req.body.password) {
+  if (changingPassword) {
     if (req.body.password.length < 6) {
       return res.status(400).json({ message: 'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.' })
     }

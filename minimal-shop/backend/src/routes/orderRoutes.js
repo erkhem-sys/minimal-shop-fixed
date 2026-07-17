@@ -10,6 +10,9 @@ import { asyncHandler } from '../utils/asyncHandler.js'
 
 const router = express.Router()
 
+// Захиалгын payload (харилцагчийн мэдээлэл + сагсны бараанууд) жижиг байдаг.
+router.use(express.json({ limit: '100kb' }))
+
 // Захиалга нэвтрэлгүйгээр ч өгөх боломжтой (зочин захиалга), гэхдээ нэвтэрсэн бол user_id холбоно.
 router.post('/', optionalAuthenticate, asyncHandler(createOrder))
 
