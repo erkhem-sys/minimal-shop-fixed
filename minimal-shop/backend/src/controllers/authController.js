@@ -1,7 +1,11 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import pool from '../config/db.js'
 import { isValidEmail, isNonEmptyString, sanitizeString } from '../utils/validation.js'
+import { sendPasswordResetEmail } from '../utils/authNotification.js'
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000 // 1 цаг
 
 function signToken(user) {
   return jwt.sign(
@@ -13,6 +17,12 @@ function signToken(user) {
 
 function toPublicUser(user) {
   return { id: user.id, name: user.name, phone: user.phone, email: user.email, role: user.role }
+}
+
+// Токеныг DB-д hash хэлбэрээр хадгалдаг (жинхэнэ утга зөвхөн имэйл дотор,
+// холбоос дээр л явна) — нууц үгийн адил зарчим.
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex')
 }
 
 export async function register(req, res) {
@@ -133,4 +143,64 @@ export async function login(req, res) {
 
   const token = signToken(user)
   res.json({ token, user: toPublicUser(user) })
+}
+
+export async function forgotPassword(req, res) {
+  const email = sanitizeString(req.body.email, 160).toLowerCase()
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: 'Имэйл хаяг буруу байна.' })
+  }
+
+  const result = await pool.query('SELECT id, name, email FROM users WHERE email = $1', [email])
+  const user = result.rows[0]
+
+  // Ийм имэйлтэй хэрэглэгч байгаа эсэхийг задруулахгүйн тулд аль ч тохиолдолд
+  // ижил хариу буцаана.
+  if (user) {
+    const token = crypto.randomBytes(32).toString('hex')
+    const tokenHash = hashResetToken(token)
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS)
+
+    await pool.query('UPDATE users SET reset_token_hash = $1, reset_token_expires_at = $2 WHERE id = $3', [
+      tokenHash,
+      expiresAt,
+      user.id,
+    ])
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://minimal-shop-fixed.vercel.app'
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+    sendPasswordResetEmail(user, resetUrl)
+  }
+
+  res.json({ message: 'Хэрэв энэ имэйл хаяг бүртгэлтэй бол нууц үг сэргээх холбоос илгээгдлээ.' })
+}
+
+export async function resetPassword(req, res) {
+  const { token, password } = req.body
+
+  if (!isNonEmptyString(token)) {
+    return res.status(400).json({ message: 'Холбоос буруу байна.' })
+  }
+  if (!isNonEmptyString(password) || password.length < 6) {
+    return res.status(400).json({ message: 'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой.' })
+  }
+
+  const tokenHash = hashResetToken(token)
+  const result = await pool.query(
+    'SELECT id FROM users WHERE reset_token_hash = $1 AND reset_token_expires_at > NOW()',
+    [tokenHash]
+  )
+  const user = result.rows[0]
+
+  if (!user) {
+    return res.status(400).json({ message: 'Холбоосны хугацаа дууссан эсвэл буруу байна. Дахин хүсэлт илгээнэ үү.' })
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+  await pool.query(
+    'UPDATE users SET password = $1, reset_token_hash = NULL, reset_token_expires_at = NULL WHERE id = $2',
+    [hashedPassword, user.id]
+  )
+
+  res.json({ message: 'Нууц үг амжилттай солигдлоо. Одоо шинэ нууц үгээрээ нэвтэрч болно.' })
 }

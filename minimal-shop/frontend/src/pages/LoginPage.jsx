@@ -46,6 +46,12 @@ export default function LoginPage() {
         </button>
       </form>
 
+      <p className="text-sm text-center mt-4">
+        <Link to="/forgot-password" className="text-navy font-medium hover:underline">
+          Нууц үг мартсан уу?
+        </Link>
+      </p>
+
       <p className="text-sm text-clay text-center mt-6">
         Бүртгэлгүй юу?{' '}
         <Link to="/register" className="text-navy font-medium hover:underline">

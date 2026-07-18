@@ -22,6 +22,8 @@ services:
         value: https://your-frontend.vercel.app
       - key: PUBLIC_BASE_URL
         value: https://minimal-shop-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://your-frontend.vercel.app
       - key: RESEND_API_KEY
         sync: false
       - key: NOTIFY_EMAIL
