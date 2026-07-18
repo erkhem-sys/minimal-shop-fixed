@@ -4,6 +4,7 @@ import {
   getOrders,
   getOrderById,
   updateOrderStatus,
+  deleteOrder,
 } from '../controllers/orderController.js'
 import { authenticate, requireAdmin, optionalAuthenticate } from '../middleware/auth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
@@ -20,7 +21,8 @@ router.post('/', optionalAuthenticate, asyncHandler(createOrder))
 router.get('/', authenticate, asyncHandler(getOrders))
 router.get('/:id', authenticate, asyncHandler(getOrderById))
 
-// Захиалгын төлөв шинэчлэх — зөвхөн админ
+// Захиалгын төлөв шинэчлэх, устгах — зөвхөн админ
 router.put('/:id', authenticate, requireAdmin, asyncHandler(updateOrderStatus))
+router.delete('/:id', authenticate, requireAdmin, asyncHandler(deleteOrder))
 
 export default router

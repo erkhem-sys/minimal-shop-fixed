@@ -180,3 +180,16 @@ export async function updateOrderStatus(req, res) {
 
   res.json({ order: result.rows[0] })
 }
+
+export async function deleteOrder(req, res) {
+  const { id } = req.params
+  // order_items хүснэгт нь order_id-г ON DELETE CASCADE-тэй холбосон тул
+  // захиалгыг устгахад холбогдох мөрүүд нь автоматаар устана.
+  const result = await pool.query('DELETE FROM orders WHERE id = $1 RETURNING id', [id])
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ message: 'Захиалга олдсонгүй.' })
+  }
+
+  res.json({ message: 'Захиалга устгагдлаа.', id: result.rows[0].id })
+}

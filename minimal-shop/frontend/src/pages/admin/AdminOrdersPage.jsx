@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import api from '../../utils/api'
 import { formatPrice, formatDate } from '../../utils/format'
 
@@ -15,6 +15,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     fetchOrders()
@@ -41,6 +42,19 @@ export default function AdminOrdersPage() {
       window.alert('Захиалгын төлөв шинэчлэхэд алдаа гарлаа.')
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  async function handleDelete(orderId) {
+    if (!window.confirm(`Захиалга #${orderId}-ыг устгахдаа итгэлтэй байна уу? Энэ үйлдлийг буцаах боломжгүй.`)) return
+    setDeletingId(orderId)
+    try {
+      await api.delete(`/orders/${orderId}`)
+      setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    } catch {
+      window.alert('Захиалга устгахад алдаа гарлаа.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -73,6 +87,14 @@ export default function AdminOrdersPage() {
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                  <button
+                    onClick={() => handleDelete(order.id)}
+                    disabled={deletingId === order.id}
+                    aria-label="Устгах"
+                    className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-rust hover:bg-rust-light disabled:opacity-50"
+                  >
+                    {deletingId === order.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                  </button>
                 </div>
               </div>
 
