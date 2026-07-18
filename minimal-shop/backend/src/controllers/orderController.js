@@ -1,8 +1,10 @@
 import pool from '../config/db.js'
 import { isNonEmptyString, isValidEmail, sanitizeString } from '../utils/validation.js'
-import { sendNewOrderEmail, sendOrderConfirmationEmail } from '../utils/orderNotification.js'
+import { sendNewOrderEmail, sendOrderConfirmationEmail, sendLowStockEmail } from '../utils/orderNotification.js'
 
 const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+// AdminDashboardPage-ийн "Үлдэгдэл багатай бараа" мэдээллийн хязгаартай ижил байлгав.
+const LOW_STOCK_THRESHOLD = 5
 
 export async function createOrder(req, res) {
   const { customer, delivery, payment, items } = req.body
@@ -27,6 +29,7 @@ export async function createOrder(req, res) {
 
     let total = 0
     const validatedItems = []
+    const lowStockProducts = []
 
     for (const item of items) {
       const productResult = await client.query('SELECT * FROM products WHERE id = $1 FOR UPDATE', [
@@ -56,6 +59,13 @@ export async function createOrder(req, res) {
         item.quantity,
         product.id,
       ])
+
+      // Зөвхөн ЭНЭ захиалгаар анх удаа босго давсан үед л мэдэгдэнэ (өмнө нь
+      // аль хэдийн бага байсан бол захиалга бүрд давтан илгээхгүй байх зорилготой).
+      const newStock = product.stock - item.quantity
+      if (product.stock > LOW_STOCK_THRESHOLD && newStock <= LOW_STOCK_THRESHOLD) {
+        lowStockProducts.push({ name: product.name, stock: newStock })
+      }
     }
 
     const deliveryFee = { standard: 6000, express: 12000, pickup: 0 }[delivery] ?? 6000
@@ -95,6 +105,9 @@ export async function createOrder(req, res) {
     sendNewOrderEmail(order, validatedItems)
     if (order.customer_email) {
       sendOrderConfirmationEmail(order, validatedItems)
+    }
+    if (lowStockProducts.length > 0) {
+      sendLowStockEmail(lowStockProducts)
     }
 
     res.status(201).json({ order })

@@ -91,3 +91,31 @@ ${itemsText}
     console.error('Захиалгын баталгаажуулах имэйл илгээхэд алдаа гарлаа:', err)
   }
 }
+
+// Захиалга ирж, тухайн барааны үлдэгдэл бага (эсвэл дуусах) түвшинд орсон
+// үед admin-д мэдэгдэнэ. products нь [{ name, stock }] хэлбэртэй байна.
+export async function sendLowStockEmail(products) {
+  if (!isMailConfigured || products.length === 0) return
+
+  const itemsText = products
+    .map((p) => `  • ${p.name} — ${p.stock === 0 ? 'дууссан' : `${p.stock} ширхэг үлдсэн`}`)
+    .join('\n')
+
+  const body = `Дараах барааны үлдэгдэл цөөрлөө:
+
+${itemsText}
+
+Бараагаа нэмж захиалах эсвэл admin панелаас үлдэгдлийг шинэчилнэ үү: https://minimal-shop-fixed.vercel.app/admin/products`
+
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Минимал Хэрэглээ Шоп <onboarding@resend.dev>',
+      to: process.env.NOTIFY_EMAIL,
+      subject: `Барааны үлдэгдэл бага байна (${products.length} бараа)`,
+      text: body,
+    })
+    if (error) throw error
+  } catch (err) {
+    console.error('Барааны үлдэгдлийн мэдэгдэл илгээхэд алдаа гарлаа:', err)
+  }
+}
