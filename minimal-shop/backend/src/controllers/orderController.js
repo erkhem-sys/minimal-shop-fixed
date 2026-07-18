@@ -1,6 +1,6 @@
 import pool from '../config/db.js'
-import { isNonEmptyString, sanitizeString } from '../utils/validation.js'
-import { sendNewOrderEmail } from '../utils/orderNotification.js'
+import { isNonEmptyString, isValidEmail, sanitizeString } from '../utils/validation.js'
+import { sendNewOrderEmail, sendOrderConfirmationEmail } from '../utils/orderNotification.js'
 
 const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
@@ -15,6 +15,10 @@ export async function createOrder(req, res) {
   }
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ message: 'Сагс хоосон байна.' })
+  }
+  // Имэйл заавал биш — өгсөн бол зөв хэлбэртэй байх ёстой.
+  if (customer.email && !isValidEmail(customer.email)) {
+    return res.status(400).json({ message: 'Имэйл хаяг буруу байна.' })
   }
 
   const client = await pool.connect()
@@ -59,13 +63,14 @@ export async function createOrder(req, res) {
 
     const orderResult = await client.query(
       `INSERT INTO orders
-        (user_id, customer_name, customer_phone, customer_address, customer_district, delivery_method, payment_method, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+        (user_id, customer_name, customer_phone, customer_email, customer_address, customer_district, delivery_method, payment_method, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
        RETURNING *`,
       [
         req.user?.id || null,
         sanitizeString(customer.name, 120),
         sanitizeString(customer.phone, 30),
+        sanitizeString(customer.email, 160).toLowerCase(),
         sanitizeString(customer.address, 300),
         sanitizeString(customer.district, 100),
         sanitizeString(delivery, 30) || 'standard',
@@ -88,6 +93,9 @@ export async function createOrder(req, res) {
 
     // Хариу буцаахад саад болохгүйн тулд "await"-гүйгээр дуудна.
     sendNewOrderEmail(order, validatedItems)
+    if (order.customer_email) {
+      sendOrderConfirmationEmail(order, validatedItems)
+    }
 
     res.status(201).json({ order })
   } catch (err) {
@@ -125,7 +133,13 @@ export async function getOrders(req, res) {
 
   const ordersWithItems = orders.map((o) => ({
     ...o,
-    customer: { name: o.customer_name, phone: o.customer_phone, address: o.customer_address, district: o.customer_district },
+    customer: {
+      name: o.customer_name,
+      phone: o.customer_phone,
+      email: o.customer_email,
+      address: o.customer_address,
+      district: o.customer_district,
+    },
     items: itemsByOrder[o.id] || [],
   }))
 
@@ -156,6 +170,7 @@ export async function getOrderById(req, res) {
       customer: {
         name: order.customer_name,
         phone: order.customer_phone,
+        email: order.customer_email,
         address: order.customer_address,
         district: order.customer_district,
       },

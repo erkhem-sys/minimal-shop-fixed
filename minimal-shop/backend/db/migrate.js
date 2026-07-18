@@ -64,6 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 -- баганыг тусад нь ALTER-аар нэмнэ — ингэснээр хуучин суулгацууд дээр ч ажиллана.
 ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS video TEXT DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(160) DEFAULT '';
 `
 
 async function migrate() {

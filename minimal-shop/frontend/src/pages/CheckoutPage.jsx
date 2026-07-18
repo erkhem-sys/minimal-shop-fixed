@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
+    email: user?.email || '',
     address: '',
     district: '',
     delivery: 'standard',
@@ -50,7 +51,13 @@ export default function CheckoutPage() {
 
     try {
       const payload = {
-        customer: { name: form.name, phone: form.phone, address: form.address, district: form.district },
+        customer: {
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          address: form.address,
+          district: form.district,
+        },
         delivery: form.delivery,
         payment: form.payment,
         items: items.map((i) => ({ product_id: i.id, quantity: i.quantity, price: i.price })),
@@ -100,6 +107,13 @@ export default function CheckoutPage() {
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
                 className="input-field"
+              />
+              <input
+                type="email"
+                placeholder="Имэйл (баталгаа авахыг хүсвэл)"
+                value={form.email}
+                onChange={(e) => update('email', e.target.value)}
+                className="input-field sm:col-span-2"
               />
               <input
                 type="text"

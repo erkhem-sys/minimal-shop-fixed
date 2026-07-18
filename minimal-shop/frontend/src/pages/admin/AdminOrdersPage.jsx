@@ -100,7 +100,8 @@ export default function AdminOrdersPage() {
 
               {order.customer && (
                 <p className="text-xs text-clay">
-                  {order.customer.name} · {order.customer.phone} · {order.customer.district}, {order.customer.address}
+                  {order.customer.name} · {order.customer.phone}
+                  {order.customer.email && <> · {order.customer.email}</>} · {order.customer.district}, {order.customer.address}
                 </p>
               )}
 
