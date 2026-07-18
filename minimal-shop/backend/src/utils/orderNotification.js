@@ -1,4 +1,4 @@
-import transporter, { isMailConfigured } from '../config/mailer.js'
+import resend, { isMailConfigured } from '../config/resend.js'
 
 function formatMNT(amount) {
   return `${Number(amount).toLocaleString('mn-MN')}₮`
@@ -33,12 +33,13 @@ ${itemsText}
 Захиалгыг admin панелаас удирдана уу: https://minimal-shop-fixed.vercel.app/admin/orders`
 
   try {
-    await transporter.sendMail({
-      from: `"Минимал Хэрэглээ Шоп" <${process.env.GMAIL_USER}>`,
-      to: process.env.NOTIFY_EMAIL || process.env.GMAIL_USER,
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Минимал Хэрэглээ Шоп <onboarding@resend.dev>',
+      to: process.env.NOTIFY_EMAIL,
       subject: `Шинэ захиалга #${order.id} — ${formatMNT(order.total)}`,
       text: body,
     })
+    if (error) throw error
   } catch (err) {
     console.error('Захиалгын имэйл мэдэгдэл илгээхэд алдаа гарлаа:', err)
   }
