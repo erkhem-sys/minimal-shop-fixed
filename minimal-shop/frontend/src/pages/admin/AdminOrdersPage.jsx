@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Loader2, Trash2, CheckCircle2, Circle } from 'lucide-react'
 import api from '../../utils/api'
 import { formatPrice, formatDate } from '../../utils/format'
 
@@ -16,6 +16,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [payingId, setPayingId] = useState(null)
 
   useEffect(() => {
     fetchOrders()
@@ -42,6 +43,18 @@ export default function AdminOrdersPage() {
       window.alert('Захиалгын төлөв шинэчлэхэд алдаа гарлаа.')
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  async function handlePaidToggle(orderId, currentIsPaid) {
+    setPayingId(orderId)
+    try {
+      await api.put(`/orders/${orderId}`, { is_paid: !currentIsPaid })
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, is_paid: !currentIsPaid } : o)))
+    } catch {
+      window.alert('Төлбөрийн төлөв шинэчлэхэд алдаа гарлаа.')
+    } finally {
+      setPayingId(null)
     }
   }
 
@@ -77,6 +90,24 @@ export default function AdminOrdersPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="price-tag text-sm font-semibold">{formatPrice(order.total)}</span>
+                  <button
+                    onClick={() => handlePaidToggle(order.id, order.is_paid)}
+                    disabled={payingId === order.id}
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5 transition-colors disabled:opacity-50 ${
+                      order.is_paid
+                        ? 'bg-navy/10 text-navy hover:bg-navy/15'
+                        : 'bg-rust-light text-rust hover:bg-rust-light/70'
+                    }`}
+                  >
+                    {payingId === order.id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : order.is_paid ? (
+                      <CheckCircle2 size={13} />
+                    ) : (
+                      <Circle size={13} />
+                    )}
+                    {order.is_paid ? 'Төлөгдсөн' : 'Төлөгдөөгүй'}
+                  </button>
                   <select
                     value={order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value)}

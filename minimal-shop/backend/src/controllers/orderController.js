@@ -181,17 +181,24 @@ export async function getOrderById(req, res) {
 
 export async function updateOrderStatus(req, res) {
   const { id } = req.params
-  const { status } = req.body
+  const { status, is_paid: isPaid } = req.body
 
-  if (!VALID_STATUSES.includes(status)) {
-    return res.status(400).json({ message: 'Захиалгын төлөв буруу байна.' })
-  }
-
-  const result = await pool.query('UPDATE orders SET status = $1 WHERE id = $2 RETURNING *', [status, id])
-
-  if (result.rows.length === 0) {
+  const existing = await pool.query('SELECT * FROM orders WHERE id = $1', [id])
+  if (existing.rows.length === 0) {
     return res.status(404).json({ message: 'Захиалга олдсонгүй.' })
   }
+  const current = existing.rows[0]
+
+  const nextStatus = status !== undefined ? status : current.status
+  if (!VALID_STATUSES.includes(nextStatus)) {
+    return res.status(400).json({ message: 'Захиалгын төлөв буруу байна.' })
+  }
+  const nextIsPaid = isPaid !== undefined ? Boolean(isPaid) : current.is_paid
+
+  const result = await pool.query(
+    'UPDATE orders SET status = $1, is_paid = $2 WHERE id = $3 RETURNING *',
+    [nextStatus, nextIsPaid, id]
+  )
 
   res.json({ order: result.rows[0] })
 }

@@ -65,6 +65,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT '{}';
 ALTER TABLE products ADD COLUMN IF NOT EXISTS video TEXT DEFAULT '';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(160) DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_paid BOOLEAN NOT NULL DEFAULT false;
 `
 
 async function migrate() {
