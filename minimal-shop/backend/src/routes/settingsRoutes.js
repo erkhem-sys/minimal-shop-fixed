@@ -8,8 +8,9 @@ const router = express.Router()
 // Нийтэд нээлттэй — нүүр хуудас энэ эндпойнтоос hero зураг/текстээ уншина.
 router.get('/', asyncHandler(getSettings))
 
-// heroImage base64 байж болох тул том хязгаартай, гэхдээ зөвхөн
-// authenticate/requireAdmin давсны дараа л энэ parser ажиллана.
-router.put('/', authenticate, requireAdmin, express.json({ limit: '5mb' }), asyncHandler(updateSettings))
+// heroImage/qrImage base64 байж болох (хоёулаа нэг дор илгээгдэж болзошгүй) тул
+// том хязгаартай, гэхдээ зөвхөн authenticate/requireAdmin давсны дараа л энэ
+// parser ажиллана.
+router.put('/', authenticate, requireAdmin, express.json({ limit: '10mb' }), asyncHandler(updateSettings))
 
 export default router

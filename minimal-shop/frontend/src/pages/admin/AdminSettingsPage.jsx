@@ -9,13 +9,18 @@ const EMPTY_FORM = {
   heroEyebrow: '',
   heroTitle: '',
   heroSubtitle: '',
+  bankName: '',
+  bankAccount: '',
+  bankAccountHolder: '',
+  qrImage: '',
+  qrNote: '',
 }
 
 export default function AdminSettingsPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(null)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
 
@@ -41,10 +46,11 @@ export default function AdminSettingsPage() {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  async function handleImageUpload(e) {
+  async function handleImageUpload(field, e) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
-    setUploading(true)
+    setUploading(field)
     setError(null)
     try {
       const formData = new FormData()
@@ -52,11 +58,11 @@ export default function AdminSettingsPage() {
       const { data } = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      update('heroImage', data.url)
+      update(field, data.url)
     } catch {
       setError('Зураг хуулахад алдаа гарлаа.')
     } finally {
-      setUploading(false)
+      setUploading(null)
     }
   }
 
@@ -87,9 +93,9 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-display font-bold text-2xl mb-2">Нүүр хуудасны тохиргоо</h1>
+      <h1 className="font-display font-bold text-2xl mb-2">Нүүр хуудас, төлбөрийн тохиргоо</h1>
       <p className="text-sm text-clay mb-8">
-        Нүүр хуудасны эхний том зураг болон гарчиг, тайлбар текстийг эндээс шууд өөрчилнө.
+        Нүүр хуудасны зураг/текст болон захиалгын үеийн банк/QR мэдээллийг эндээс шууд өөрчилнө.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white border border-rule rounded-xl p-6">
@@ -103,9 +109,9 @@ export default function AdminSettingsPage() {
             />
           </div>
           <label className="inline-flex items-center gap-2 text-sm font-medium border border-rule rounded-full px-4 py-2.5 cursor-pointer hover:border-navy">
-            {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-            {uploading ? 'Хуулж байна...' : 'Зураг сонгох'}
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            {uploading === 'heroImage' ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+            {uploading === 'heroImage' ? 'Хуулж байна...' : 'Зураг сонгох'}
+            <input type="file" accept="image/*" onChange={(e) => handleImageUpload('heroImage', e)} className="hidden" />
           </label>
         </div>
 
@@ -139,6 +145,73 @@ export default function AdminSettingsPage() {
             onChange={(e) => update('heroSubtitle', e.target.value)}
             className="input-field resize-none"
           />
+        </div>
+
+        <div className="border-t hairline border-solid pt-6">
+          <p className="eyebrow mb-1"><span className="eyebrow-dot" />Захиалгын төлбөрийн мэдээлэл</p>
+          <p className="text-xs text-clay mb-4">Checkout хуудсанд харагдах банкны данс болон QR зураг.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Банкны нэр</label>
+              <input
+                type="text"
+                value={form.bankName}
+                onChange={(e) => update('bankName', e.target.value)}
+                placeholder="Хас Банк"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Дансны эзэмшигч</label>
+              <input
+                type="text"
+                value={form.bankAccountHolder}
+                onChange={(e) => update('bankAccountHolder', e.target.value)}
+                placeholder="Эрхэмээ Оюунчимэг"
+                className="input-field"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm font-medium block mb-1.5">Дансны дугаар</label>
+              <input
+                type="text"
+                value={form.bankAccount}
+                onChange={(e) => update('bankAccount', e.target.value)}
+                placeholder="MN960032005005824809"
+                className="input-field"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1.5">QR төлбөрийн зураг</label>
+            {form.qrImage && (
+              <img
+                src={resolveImageUrl(form.qrImage)}
+                alt=""
+                className="w-32 h-32 rounded-lg object-cover bg-sand mb-3 border border-rule"
+              />
+            )}
+            <div>
+              <label className="inline-flex items-center gap-2 text-sm font-medium border border-rule rounded-full px-4 py-2.5 cursor-pointer hover:border-navy">
+                {uploading === 'qrImage' ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                {uploading === 'qrImage' ? 'Хуулж байна...' : form.qrImage ? 'Зураг солих' : 'Зураг сонгох'}
+                <input type="file" accept="image/*" onChange={(e) => handleImageUpload('qrImage', e)} className="hidden" />
+              </label>
+            </div>
+
+            <div className="mt-3">
+              <label className="text-sm font-medium block mb-1.5">QR зургийн доорх тайлбар</label>
+              <input
+                type="text"
+                value={form.qrNote}
+                onChange={(e) => update('qrNote', e.target.value)}
+                placeholder="80701907 - Эрхэмээ"
+                className="input-field max-w-xs"
+              />
+            </div>
+          </div>
         </div>
 
         {error && <p className="text-sm text-rust">{error}</p>}

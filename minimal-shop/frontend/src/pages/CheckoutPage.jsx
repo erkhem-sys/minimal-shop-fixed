@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, Landmark, QrCode, Wallet, Loader2 } from 'lucide-react'
 import { useCart } from '../context/CartContext'
@@ -6,6 +6,14 @@ import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../utils/format'
 import { resolveImageUrl } from '../utils/image'
 import api from '../utils/api'
+
+const DEFAULT_PAYMENT_SETTINGS = {
+  bankName: 'Хас Банк',
+  bankAccount: 'MN960032005005824809',
+  bankAccountHolder: 'Эрхэмээ Оюунчимэг',
+  qrImage: '',
+  qrNote: '80701907 - Эрхэмээ',
+}
 
 const DELIVERY_OPTIONS = [
   { id: 'standard', label: 'Энгийн хүргэлт', detail: '1–2 хоног, хотын А бүсэд', fee: 6000 },
@@ -35,6 +43,22 @@ export default function CheckoutPage() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [paymentSettings, setPaymentSettings] = useState(DEFAULT_PAYMENT_SETTINGS)
+
+  useEffect(() => {
+    let active = true
+    api
+      .get('/settings')
+      .then(({ data }) => {
+        if (active && data.settings) {
+          setPaymentSettings({ ...DEFAULT_PAYMENT_SETTINGS, ...data.settings })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   const deliveryFee = DELIVERY_OPTIONS.find((d) => d.id === form.delivery)?.fee || 0
   const total = subtotal + deliveryFee
@@ -188,22 +212,26 @@ export default function CheckoutPage() {
                       <p className="text-xs text-clay">{opt.detail}</p>
 
                       {opt.id === 'qr' && form.payment === 'qr' && (
-                       <div style={{ marginTop: '15px' }}>
-                        <img
-                         src="http://localhost:4000/uploads/525fe674-a99f-4cf8-95ba-31701686f50a.jpg"
-                         alt="QR төлбөр"
-                         style={{ maxWidth: '250px', borderRadius: '10px' }}
-                       />
-                       <p>80701907 - Эрхэмээ</p>
-                     </div>
-                   )}
-                   {opt.id === 'bank_transfer' && form.payment === 'bank_transfer' && (
-                     <div style={{ marginTop: '15px' }}>
-                      <p><strong>Хас Банк</strong></p>
-                      <p>Данс: MN960032005005824809</p>
-                      <p>Нэр: Эрхэмээ Оюунчимэг</p>
-                    </div>
-                  )}
+                        <div className="mt-3">
+                          {paymentSettings.qrImage ? (
+                            <img
+                              src={resolveImageUrl(paymentSettings.qrImage)}
+                              alt="QR төлбөр"
+                              className="max-w-[250px] rounded-xl border border-rule"
+                            />
+                          ) : (
+                            <p className="text-xs text-clay">QR зураг удахгүй нэмэгдэнэ.</p>
+                          )}
+                          {paymentSettings.qrNote && <p className="text-sm mt-2">{paymentSettings.qrNote}</p>}
+                        </div>
+                      )}
+                      {opt.id === 'bank_transfer' && form.payment === 'bank_transfer' && (
+                        <div className="mt-3 text-sm space-y-0.5">
+                          <p className="font-semibold">{paymentSettings.bankName}</p>
+                          <p>Данс: {paymentSettings.bankAccount}</p>
+                          <p>Нэр: {paymentSettings.bankAccountHolder}</p>
+                        </div>
+                      )}
                     </div>
                   </label>
                 )

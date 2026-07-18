@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { to: '/admin', label: 'Хянах самбар', icon: LayoutDashboard, end: true },
   { to: '/admin/products', label: 'Бараа', icon: Package },
   { to: '/admin/orders', label: 'Захиалга', icon: ClipboardList },
-  { to: '/admin/settings', label: 'Нүүр хуудас', icon: Settings },
+  { to: '/admin/settings', label: 'Тохиргоо', icon: Settings },
 ]
 
 export default function AdminLayout() {
