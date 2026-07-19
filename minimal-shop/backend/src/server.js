@@ -23,10 +23,37 @@ app.set('trust proxy', 1)
 // --- Security middleware ---
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',')
+// CORS_ORIGIN-д зааснаас гадна тухайн домэйн бүрийн "www." хувилбарыг ч
+// автоматаар зөвшөөрнө — учир нь Vercel зэрэг hosting нь бэр домэйныг www
+// хувилбар руу чиглүүлдэг тул хоёуланг нь гараар тус тусад нь бичиж мартах
+// эрсдэлээс сэргийлнэ (мөн орон зайг trim хийж, санамсаргүй хоосон зай орсноос
+// болж бүхэл origin таарахгүй болохоос сэргийлнэ).
+const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+const allowedOrigins = new Set()
+for (const origin of configuredOrigins) {
+  allowedOrigins.add(origin)
+  try {
+    const url = new URL(origin)
+    const altHost = url.hostname.startsWith('www.') ? url.hostname.slice(4) : `www.${url.hostname}`
+    allowedOrigins.add(`${url.protocol}//${altHost}`)
+  } catch {
+    // Буруу хэлбэртэй origin байвал алгасна — доор cors() өөрөө хориглоно.
+  }
+}
+
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('CORS-оор хориглогдсон домэйн.'))
+      }
+    },
     credentials: true,
   })
 )
