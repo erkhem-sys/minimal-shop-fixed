@@ -138,6 +138,9 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Гар утсан дээр дээрх линк нуугддаг тул (зай хэмнэх зорилгоор), барааны
+            доор тод товч нэмж, "Бүх бараа" хуудас руу орох боломжийг илт харуулна. */}
+
         {loading ? (
           <div className="flex items-center justify-center gap-2 text-sm text-clay py-16">
             <Loader2 size={18} className="animate-spin" /> Ачааллаж байна...
@@ -154,6 +157,14 @@ export default function HomePage() {
             {featuredProducts.map((product) => (
               <FeaturedProductCard key={product.id} product={product} />
             ))}
+          </div>
+        )}
+
+        {!loading && !error && featuredProducts.length > 0 && (
+          <div className="mt-8 flex justify-center">
+            <Link to="/products" className="btn-secondary">
+              Бүгдийг үзэх <ArrowRight size={14} />
+            </Link>
           </div>
         )}
       </section>
