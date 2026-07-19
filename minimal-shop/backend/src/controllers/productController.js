@@ -23,10 +23,17 @@ function sanitizeImageList(value) {
   return cleaned.slice(0, MAX_PRODUCT_IMAGES)
 }
 
+// Барааны жагсаалт (нүүр хуудас, бүх бараа хуудас) дээр ProductCard зөвхөн
+// үндсэн зураг (image) болон нэмэлт зургийн ТОО-г л ("N зурагтай" тэмдэг)
+// харуулдаг тул images массивын бодит base64 агуулгыг энд дамжуулах шаардлагагүй.
+// Тэдгээрийг илгээвэл (бараа тус бүрт хэдэн зураг × ~100-300KB) хариу хэт том
+// (~1.4MB+) болж, удаан ачаалагдах шалтгаан болдог байсан.
 export async function getProducts(req, res) {
   const { category, search, sort } = req.query
 
-  let query = 'SELECT * FROM products WHERE 1=1'
+  let query = `SELECT id, name, description, price, image, category, stock, created_date, video,
+    COALESCE(array_length(images, 1), 0) AS image_count
+    FROM products WHERE 1=1`
   const params = []
 
   if (category) {

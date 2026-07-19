@@ -11,7 +11,7 @@ export default function FeaturedProductCard({ product }) {
   const [added, setAdded] = useState(false)
   const outOfStock = product.stock <= 0
   const categoryName = CATEGORIES.find((c) => c.id === product.category)?.name
-  const extraImageCount = (product.images?.length || 0) - 1
+  const extraImageCount = (product.image_count || 0) - 1
 
   function handleAddToCart() {
     if (outOfStock) return

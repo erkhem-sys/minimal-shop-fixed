@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 export default function ProductCard({ product }) {
   const { addItem } = useCart()
   const outOfStock = product.stock <= 0
-  const extraImageCount = (product.images?.length || 0) - 1
+  const extraImageCount = (product.image_count || 0) - 1
 
   function handleQuickAdd(e) {
     e.preventDefault()
