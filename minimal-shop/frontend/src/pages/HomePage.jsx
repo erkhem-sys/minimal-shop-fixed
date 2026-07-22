@@ -99,10 +99,10 @@ export default function HomePage() {
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <a href="#featured" className="btn-primary">
+              <Link to="/products" className="btn-primary">
                 Бараа үзэх
                 <ArrowRight size={15} />
-              </a>
+              </Link>
               <a href="tel:80701907" className="btn-secondary">
                 <Phone size={15} />
                 80701907 руу залгах
