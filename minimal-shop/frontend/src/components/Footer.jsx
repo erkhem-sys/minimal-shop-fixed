@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Facebook, MessageCircle, Mail, MapPin, Phone } from 'lucide-react'
+import logoIcon from '../assets/logo-icon.png'
 
 export default function Footer() {
   return (
@@ -8,9 +9,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
-              <span className="w-9 h-9 rounded-full border-2 border-ink flex items-center justify-center">
-                <span className="font-display font-bold text-sm">M</span>
-              </span>
+              <img src={logoIcon} alt="Минимал" className="w-9 h-9" />
               <span className="leading-tight">
                 <span className="block font-display font-bold text-sm">МИНИМАЛ</span>
                 <span className="block text-[9px] font-medium tracking-widest text-clay">ХЭРЭГЛЭЭ ШОП</span>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Search, ShoppingBag, User, Menu, X } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import logoIcon from '../assets/logo-icon.png'
 
 export default function Header() {
   const { itemCount } = useCart()
@@ -23,11 +24,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white">
       <div className="max-w-6xl mx-auto px-5 md:px-8">
         <div className="flex items-center justify-between h-20 border-b hairline border-solid">
-          {/* Logo — round "M" mark mirrors the reference design */}
           <Link to="/" className="flex items-center gap-2.5 shrink-0">
-            <span className="w-9 h-9 rounded-full border-2 border-ink flex items-center justify-center">
-              <span className="font-display font-bold text-sm">M</span>
-            </span>
+            <img src={logoIcon} alt="Минимал" className="w-9 h-9" />
             <span className="leading-tight">
               <span className="block font-display font-bold text-sm tracking-tight">МИНИМАЛ</span>
               <span className="block text-[9px] font-medium tracking-widest text-clay">ХЭРЭГЛЭЭ ШОП</span>

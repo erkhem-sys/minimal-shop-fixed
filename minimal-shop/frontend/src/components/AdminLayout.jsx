@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { LayoutDashboard, Package, ClipboardList, LogOut, ArrowLeft, Settings, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import logoIcon from '../assets/logo-icon.png'
 
 const NAV_ITEMS = [
   { to: '/admin', label: 'Хянах самбар', icon: LayoutDashboard, end: true },
@@ -19,9 +20,7 @@ export default function AdminLayout() {
       <aside className="w-60 bg-white border-r hairline border-solid shrink-0 hidden md:flex flex-col">
         <div className="h-20 flex items-center px-6 border-b hairline border-solid">
           <Link to="/" className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-full border-2 border-ink flex items-center justify-center">
-              <span className="font-display font-bold text-sm">M</span>
-            </span>
+            <img src={logoIcon} alt="Минимал" className="w-9 h-9" />
             <span className="font-display font-bold text-sm">Админ</span>
           </Link>
         </div>
