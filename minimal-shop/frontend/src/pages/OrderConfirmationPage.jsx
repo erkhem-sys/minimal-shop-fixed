@@ -1,21 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, Phone, Loader2 } from 'lucide-react'
 import api from '../utils/api'
 import { formatPrice, formatDate } from '../utils/format'
+import { trackPurchase } from '../utils/analytics'
 
 export default function OrderConfirmationPage() {
   const { orderId } = useParams()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const trackedRef = useRef(false)
 
   useEffect(() => {
     let active = true
     async function fetchOrder() {
       try {
         const { data } = await api.get(`/orders/${orderId}`)
-        if (active) setOrder(data.order)
+        if (active) {
+          setOrder(data.order)
+          if (!trackedRef.current) {
+            trackedRef.current = true
+            trackPurchase(data.order)
+          }
+        }
       } catch {
         if (active) setError('Захиалгын мэдээлэл олдсонгүй.')
       } finally {

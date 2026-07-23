@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import ProtectedAdminRoute from './components/ProtectedAdminRoute'
@@ -22,8 +23,15 @@ import AdminProductsPage from './pages/admin/AdminProductsPage'
 import AdminProductFormPage from './pages/admin/AdminProductFormPage'
 import AdminOrdersPage from './pages/admin/AdminOrdersPage'
 import AdminSettingsPage from './pages/admin/AdminSettingsPage'
+import { trackPageView } from './utils/analytics'
 
 export default function App() {
+  const location = useLocation()
+
+  useEffect(() => {
+    trackPageView(location.pathname + location.search)
+  }, [location.pathname, location.search])
+
   return (
     <Routes>
       <Route element={<Layout />}>
