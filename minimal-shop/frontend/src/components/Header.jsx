@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Search, ShoppingBag, User, Menu, X } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { CATEGORIES } from '../data/products'
 import logoIcon from '../assets/logo-icon.png'
 
 export default function Header() {
@@ -122,12 +123,16 @@ export default function Header() {
           <Link to="/products" className="block py-2 text-sm font-medium" onClick={() => setMobileOpen(false)}>
             Бараа
           </Link>
-          <Link to="/products?category=kitchen" className="block py-2 text-sm font-medium" onClick={() => setMobileOpen(false)}>
-            Гэр ахуй
-          </Link>
-          <Link to="/products?category=stationery" className="block py-2 text-sm font-medium" onClick={() => setMobileOpen(false)}>
-            Бичиг хэрэг
-          </Link>
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat.id}
+              to={`/products?category=${cat.id}`}
+              className="block py-2 text-sm font-medium"
+              onClick={() => setMobileOpen(false)}
+            >
+              {cat.name}
+            </Link>
+          ))}
           <Link
             to={user ? '/profile' : '/login'}
             className="block py-2 text-sm font-medium"
