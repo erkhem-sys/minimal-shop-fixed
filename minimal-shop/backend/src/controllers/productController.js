@@ -1,6 +1,7 @@
 import pool from '../config/db.js'
 import { isNonEmptyString, isPositiveNumber, sanitizeString } from '../utils/validation.js'
 import { isValidCategory, VALID_CATEGORIES } from '../utils/categories.js'
+import { resizeThumbImage } from '../utils/imageResize.js'
 
 const MAX_PRODUCT_IMAGES = 6
 // Зураг нь base64 data URI (жишээ нь data:image/jpeg;base64,...) хэлбэрээр
@@ -31,7 +32,8 @@ function sanitizeImageList(value) {
 export async function getProducts(req, res) {
   const { category, search, sort, featured } = req.query
 
-  let query = `SELECT id, name, description, price, image, category, stock, created_date, video, is_featured,
+  let query = `SELECT id, name, description, price, category, stock, created_date, video, is_featured,
+    COALESCE(NULLIF(image_thumb, ''), image) AS image,
     COALESCE(array_length(images, 1), 0) AS image_count
     FROM products WHERE 1=1`
   const params = []
@@ -98,11 +100,14 @@ export async function createProduct(req, res) {
   const video = sanitizeString(req.body.video, 500)
   const isFeatured = Boolean(req.body.is_featured)
 
+  const cleanImage = sanitizeImageValue(image)
+  const imageThumb = await resizeThumbImage(cleanImage)
+
   const result = await pool.query(
-    `INSERT INTO products (name, description, price, image, images, video, category, stock, is_featured)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO products (name, description, price, image, image_thumb, images, video, category, stock, is_featured)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [name, description, price, sanitizeImageValue(image), images, video, sanitizeString(category, 60), stock, isFeatured]
+    [name, description, price, cleanImage, imageThumb, images, video, sanitizeString(category, 60), stock, isFeatured]
   )
 
   res.status(201).json({ product: result.rows[0] })
@@ -142,11 +147,16 @@ export async function updateProduct(req, res) {
   const video = req.body.video !== undefined ? sanitizeString(req.body.video, 500) : current.video
   const isFeatured = req.body.is_featured !== undefined ? Boolean(req.body.is_featured) : current.is_featured
 
+  // Зөвхөн үндсэн зураг өөрчлөгдсөн үед л дахин жижигрүүлж (шахаж) шинэ thumb үүсгэнэ —
+  // өөрчлөгдөөгүй бол хуучин thumb-аа хэвээр үлдээнэ (дэмий ажил хийхгүйн тулд).
+  const imageThumb =
+    req.body.image !== undefined ? await resizeThumbImage(image) : current.image_thumb
+
   const result = await pool.query(
-    `UPDATE products SET name = $1, description = $2, price = $3, image = $4, images = $5, video = $6,
-       category = $7, stock = $8, is_featured = $9
-     WHERE id = $10 RETURNING *`,
-    [name, description, price, image, images, video, category, stock, isFeatured, id]
+    `UPDATE products SET name = $1, description = $2, price = $3, image = $4, image_thumb = $5, images = $6, video = $7,
+       category = $8, stock = $9, is_featured = $10
+     WHERE id = $11 RETURNING *`,
+    [name, description, price, image, imageThumb, images, video, category, stock, isFeatured, id]
   )
 
   res.json({ product: result.rows[0] })
