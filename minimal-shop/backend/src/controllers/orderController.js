@@ -6,6 +6,22 @@ const VALID_STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancel
 // AdminDashboardPage-ийн "Үлдэгдэл багатай бараа" мэдээллийн хязгаартай ижил байлгав.
 const LOW_STOCK_THRESHOLD = 5
 
+// Захиалга цуцлагдах/устгагдах үед барааны нөөцийг буцааж нэмнэ.
+// stock_restored тэмдгээр давхар нэмэхээс сэргийлнэ (жишээ нь цуцлагдсан
+// захиалгыг дараа нь устгах үед stock хоёр удаа нэмэгдэхгүй байх).
+async function restoreOrderStock(client, orderId) {
+  const itemsResult = await client.query(
+    'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
+    [orderId]
+  )
+  for (const item of itemsResult.rows) {
+    await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [
+      item.quantity,
+      item.product_id,
+    ])
+  }
+}
+
 export async function createOrder(req, res) {
   const { customer, delivery, payment, items } = req.body
 
@@ -208,6 +224,28 @@ export async function updateOrderStatus(req, res) {
   }
   const nextIsPaid = isPaid !== undefined ? Boolean(isPaid) : current.is_paid
 
+  const shouldRestoreStock =
+    nextStatus === 'cancelled' && current.status !== 'cancelled' && !current.stock_restored
+
+  if (shouldRestoreStock) {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await restoreOrderStock(client, id)
+      const result = await client.query(
+        'UPDATE orders SET status = $1, is_paid = $2, stock_restored = TRUE WHERE id = $3 RETURNING *',
+        [nextStatus, nextIsPaid, id]
+      )
+      await client.query('COMMIT')
+      return res.json({ order: result.rows[0] })
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
   const result = await pool.query(
     'UPDATE orders SET status = $1, is_paid = $2 WHERE id = $3 RETURNING *',
     [nextStatus, nextIsPaid, id]
@@ -218,13 +256,30 @@ export async function updateOrderStatus(req, res) {
 
 export async function deleteOrder(req, res) {
   const { id } = req.params
-  // order_items хүснэгт нь order_id-г ON DELETE CASCADE-тэй холбосон тул
-  // захиалгыг устгахад холбогдох мөрүүд нь автоматаар устана.
-  const result = await pool.query('DELETE FROM orders WHERE id = $1 RETURNING id', [id])
 
-  if (result.rows.length === 0) {
-    return res.status(404).json({ message: 'Захиалга олдсонгүй.' })
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const existing = await client.query(
+      'SELECT stock_restored FROM orders WHERE id = $1 FOR UPDATE',
+      [id]
+    )
+    if (existing.rows.length === 0) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Захиалга олдсонгүй.' })
+    }
+    if (!existing.rows[0].stock_restored) {
+      await restoreOrderStock(client, id)
+    }
+    // order_items хүснэгт нь order_id-г ON DELETE CASCADE-тэй холбосон тул
+    // захиалгыг устгахад холбогдох мөрүүд нь автоматаар устана.
+    await client.query('DELETE FROM orders WHERE id = $1', [id])
+    await client.query('COMMIT')
+    res.json({ message: 'Захиалга устгагдлаа.', id: Number(id) })
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
   }
-
-  res.json({ message: 'Захиалга устгагдлаа.', id: result.rows[0].id })
 }
