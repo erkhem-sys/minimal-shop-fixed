@@ -14,6 +14,8 @@ const EMPTY_FORM = {
   bankAccountHolder: '',
   qrImage: '',
   qrNote: '',
+  pickupAddress: '',
+  pickupMapUrl: '',
 }
 
 export default function AdminSettingsPage() {
@@ -209,6 +211,36 @@ export default function AdminSettingsPage() {
                 onChange={(e) => update('qrNote', e.target.value)}
                 placeholder="80701907 - Эрхэмээ"
                 className="input-field max-w-xs"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t hairline border-solid pt-6">
+          <p className="eyebrow mb-1"><span className="eyebrow-dot" />Очиж авах байршил</p>
+          <p className="text-xs text-clay mb-4">
+            "Өөрөө очиж авах" сонгосон захиалагчид checkout болон "Холбоо барих" хуудсанд харагдана.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Хаяг (текст)</label>
+              <input
+                type="text"
+                value={form.pickupAddress}
+                onChange={(e) => update('pickupAddress', e.target.value)}
+                placeholder="СБД, 1-р хороо, ... байр"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1.5">Google Maps холбоос</label>
+              <input
+                type="url"
+                value={form.pickupMapUrl}
+                onChange={(e) => update('pickupMapUrl', e.target.value)}
+                placeholder="https://maps.app.goo.gl/..."
+                className="input-field"
               />
             </div>
           </div>

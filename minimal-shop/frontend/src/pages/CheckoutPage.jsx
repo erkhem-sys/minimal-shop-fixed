@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Landmark, QrCode, Wallet, Loader2 } from 'lucide-react'
+import { Check, Landmark, QrCode, Wallet, Loader2, MapPin, ExternalLink } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { formatPrice } from '../utils/format'
@@ -13,6 +13,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
   bankAccountHolder: 'Эрхэмээ Оюунчимэг',
   qrImage: '',
   qrNote: '80701907 - Эрхэмээ',
+  pickupAddress: '',
+  pickupMapUrl: '',
 }
 
 const DELIVERY_OPTIONS = [
@@ -179,6 +181,25 @@ export default function CheckoutPage() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{opt.label}</p>
                     <p className="text-xs text-clay">{opt.detail}</p>
+
+                    {opt.id === 'pickup' && form.delivery === 'pickup' && (
+                      <div className="mt-3 flex items-start gap-2.5 text-sm">
+                        <MapPin size={15} className="text-navy shrink-0 mt-0.5" />
+                        <div>
+                          <p>{paymentSettings.pickupAddress || 'Хаягийг захиалга өгсний дараа мессежээр илгээнэ.'}</p>
+                          {paymentSettings.pickupMapUrl && (
+                            <a
+                              href={paymentSettings.pickupMapUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1.5 inline-flex items-center gap-1.5 font-medium text-navy hover:underline"
+                            >
+                              Google Maps дээр харах <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <span className="price-tag text-sm">{opt.fee === 0 ? 'Үнэгүй' : formatPrice(opt.fee)}</span>
                 </label>

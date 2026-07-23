@@ -13,6 +13,8 @@ const DEFAULTS = {
   bankAccountHolder: 'Эрхэмээ Оюунчимэг',
   qrImage: '',
   qrNote: '80701907 - Эрхэмээ',
+  pickupAddress: '',
+  pickupMapUrl: 'https://maps.app.goo.gl/EqbSU7HAitxPioyQA',
 }
 
 const SETTINGS_KEYS = Object.keys(DEFAULTS)
