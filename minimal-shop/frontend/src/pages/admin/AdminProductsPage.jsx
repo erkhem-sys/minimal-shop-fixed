@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, AlertCircle, Star } from 'lucide-react'
 import api from '../../utils/api'
 import { formatPrice } from '../../utils/format'
 import { resolveImageUrl } from '../../utils/image'
@@ -11,6 +11,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [featuringId, setFeaturingId] = useState(null)
 
   async function fetchProducts() {
     setLoading(true)
@@ -43,14 +44,30 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function handleToggleFeatured(id, current) {
+    setFeaturingId(id)
+    try {
+      await api.put(`/products/${id}`, { is_featured: !current })
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, is_featured: !current } : p)))
+    } catch {
+      window.alert('Онцлох төлөв шинэчлэхэд алдаа гарлаа.')
+    } finally {
+      setFeaturingId(null)
+    }
+  }
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="font-display font-bold text-2xl">Бараа</h1>
         <Link to="/admin/products/new" className="btn-primary">
           <Plus size={15} /> Бараа нэмэх
         </Link>
       </div>
+      <p className="text-sm text-clay mb-6">
+        <Star size={13} className="inline -mt-0.5 mr-1" />
+        одон дарж нүүр хуудсанд онцлох барааг сонгоно уу (нүүр хуудсанд эхний 3-ыг харуулна).
+      </p>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-clay">
@@ -88,6 +105,21 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleToggleFeatured(p.id, p.is_featured)}
+                        disabled={featuringId === p.id}
+                        aria-label={p.is_featured ? 'Онцлохоос хасах' : 'Онцлох болгох'}
+                        aria-pressed={p.is_featured}
+                        className={`w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-sand disabled:opacity-50 ${
+                          p.is_featured ? 'text-navy' : 'text-clay'
+                        }`}
+                      >
+                        {featuringId === p.id ? (
+                          <Loader2 size={15} className="animate-spin" />
+                        ) : (
+                          <Star size={15} className={p.is_featured ? 'fill-current' : ''} />
+                        )}
+                      </button>
                       <Link
                         to={`/admin/products/${p.id}/edit`}
                         className="w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-sand"

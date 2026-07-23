@@ -21,9 +21,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Хамгийн сүүлд нэмэгдсэн бараануудыг онцлох болгоно — admin-аас шинэ
-  // бараа нэмэх бүрд энэ хэсэг автоматаар шинэчлэгдэнэ. Hero зураг/текстийг ч
-  // мөн admin-ийн "Нүүр хуудас" тохиргооноос уншина.
+  // Admin "Бараа" хуудаснаас одоор тэмдэглэсэн бараануудыг онцолж харуулна.
+  // Хэрэв admin хараахан юу ч сонгоогүй бол (жишээ нь анхны ашиглалт) хамгийн
+  // сүүлд нэмэгдсэн бараагаар нөхнө — ингэснээр нүүр хуудас хэзээ ч хоосон
+  // харагдахгүй. Hero зураг/текстийг ч мөн admin-ийн "Нүүр хуудас" тохиргооноос уншина.
   useEffect(() => {
     let active = true
 
@@ -31,12 +32,20 @@ export default function HomePage() {
       setLoading(true)
       setError(null)
       try {
-        const [productsRes, settingsRes] = await Promise.all([
-          api.get('/products'),
+        const [featuredRes, settingsRes] = await Promise.all([
+          api.get('/products', { params: { featured: true } }),
           api.get('/settings').catch(() => null),
         ])
         if (!active) return
-        setFeaturedProducts((productsRes.data.products || []).slice(0, FEATURED_COUNT))
+
+        let products = featuredRes.data.products || []
+        if (products.length === 0) {
+          const allRes = await api.get('/products')
+          if (!active) return
+          products = allRes.data.products || []
+        }
+        setFeaturedProducts(products.slice(0, FEATURED_COUNT))
+
         if (settingsRes?.data?.settings) {
           setSettings({ ...DEFAULT_SETTINGS, ...settingsRes.data.settings })
         }

@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   category: CATEGORIES[0]?.id || '',
   images: [],
   video: '',
+  is_featured: false,
 }
 
 export default function AdminProductFormPage() {
@@ -192,6 +193,19 @@ export default function AdminProductFormPage() {
             ))}
           </select>
         </div>
+
+        <label className="flex items-center gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.is_featured}
+            onChange={(e) => update('is_featured', e.target.checked)}
+            className="w-4 h-4 accent-navy"
+          />
+          <span className="text-sm font-medium flex items-center gap-1.5">
+            <Star size={14} className={form.is_featured ? 'fill-current text-navy' : 'text-clay'} />
+            Нүүр хуудсанд онцлох
+          </span>
+        </label>
 
         {/* Multi-image manager — эхний зураг картанд харагдах "үндсэн" зураг болно */}
         <div>

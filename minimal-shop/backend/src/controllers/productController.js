@@ -29,9 +29,9 @@ function sanitizeImageList(value) {
 // Тэдгээрийг илгээвэл (бараа тус бүрт хэдэн зураг × ~100-300KB) хариу хэт том
 // (~1.4MB+) болж, удаан ачаалагдах шалтгаан болдог байсан.
 export async function getProducts(req, res) {
-  const { category, search, sort } = req.query
+  const { category, search, sort, featured } = req.query
 
-  let query = `SELECT id, name, description, price, image, category, stock, created_date, video,
+  let query = `SELECT id, name, description, price, image, category, stock, created_date, video, is_featured,
     COALESCE(array_length(images, 1), 0) AS image_count
     FROM products WHERE 1=1`
   const params = []
@@ -44,6 +44,10 @@ export async function getProducts(req, res) {
   if (search) {
     params.push(`%${search}%`)
     query += ` AND (name ILIKE $${params.length} OR description ILIKE $${params.length})`
+  }
+
+  if (featured === 'true') {
+    query += ' AND is_featured = true'
   }
 
   if (sort === 'price-asc') {
@@ -92,12 +96,13 @@ export async function createProduct(req, res) {
     return res.status(400).json({ message: 'Зургийн жагсаалт буруу байна.' })
   }
   const video = sanitizeString(req.body.video, 500)
+  const isFeatured = Boolean(req.body.is_featured)
 
   const result = await pool.query(
-    `INSERT INTO products (name, description, price, image, images, video, category, stock)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO products (name, description, price, image, images, video, category, stock, is_featured)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [name, description, price, sanitizeImageValue(image), images, video, sanitizeString(category, 60), stock]
+    [name, description, price, sanitizeImageValue(image), images, video, sanitizeString(category, 60), stock, isFeatured]
   )
 
   res.status(201).json({ product: result.rows[0] })
@@ -135,12 +140,13 @@ export async function updateProduct(req, res) {
     }
   }
   const video = req.body.video !== undefined ? sanitizeString(req.body.video, 500) : current.video
+  const isFeatured = req.body.is_featured !== undefined ? Boolean(req.body.is_featured) : current.is_featured
 
   const result = await pool.query(
     `UPDATE products SET name = $1, description = $2, price = $3, image = $4, images = $5, video = $6,
-       category = $7, stock = $8
-     WHERE id = $9 RETURNING *`,
-    [name, description, price, image, images, video, category, stock, id]
+       category = $7, stock = $8, is_featured = $9
+     WHERE id = $10 RETURNING *`,
+    [name, description, price, image, images, video, category, stock, isFeatured, id]
   )
 
   res.json({ product: result.rows[0] })
